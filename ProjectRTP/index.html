@@ -13,6 +13,15 @@
     .header {
         text-align: center;
     }
+
+    .query-input {
+        width: 18%;
+    }
+
+    .submit-button {
+        width: 10%
+    }
+
     .search-space {
         margin: auto;
     }
@@ -53,8 +62,21 @@
     </div>
 
     <div id="search-div">
-        <input id="button-input" type="text" title="RPI ID (e.x. CSCI 1200)" placeholder="CSCI 1200" onchange="onClick();" />
-        <button id="submit-button" title="Click me to submit" onclick="onClick();">Submit</button>
+        <input class="query-input" id="rpi_title_id-input" type="text" title="RPI Class/ID (i.e. Calculus I or MATH 1010)" placeholder="Calculus I or MATH 1010" onchange="onClick();"/>
+
+        <input class="query-input" id="school-input" type="text" title="School (i.e. Univ of Connecticut)" placeholder="Univ of Connecticut" onchange="onClick();"/>
+        <input class="query-input" id="location-input" type="text" title="Location (i.e. Connecticut)" placeholder="Connecticut" onchange="onClick();"/>
+
+        <label for="sort">Sort by:</label>
+        <select class="query-input" name="sort" id="sort" onchange="onClick();">
+            <option value="school_name">School Name A-Z</option>
+            <option value="class_name">Class Name A-Z</option>
+            <option value="class_id">Class ID A-Z</option>
+            <option value="location">Location A-Z</option>
+        </select>
+
+        <button class="submit-button" id="submit-button" title="Click me to submit" onclick="onClick();">Submit</button>
+
         <p id="search-count"></p>
         <script type="text/javascript" src="json_parse.js"></script>
     </div>
