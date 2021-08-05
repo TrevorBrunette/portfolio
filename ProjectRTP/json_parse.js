@@ -5,10 +5,7 @@ const filepath = "/ProjectRTP/";
 let JSONfile = JSON.parse(localStorage.getItem("jsonData"));
 let localVersion = localStorage.getItem("jsonVersion");
 let webVersion = "";
-let lastQuery = "";
 
-
-console.log("Found localVersion: " + localVersion);
 onLoad();
 
 function onLoad() {
@@ -44,6 +41,7 @@ function fetchVersion() {
         .then(version => {
             version.text().then((result_text) => {
                 webVersion = result_text;
+                console.log("Found localVersion: " + localVersion);
                 console.log("Found webVersion: " + webVersion);
                 window.localStorage.setItem("jsonVersion", webVersion);
                 checkVersion();
@@ -66,79 +64,109 @@ function fetchJSON() {
     });
 }
 
-function fetchJSONAndRun() {
-    fetch(filepath+JSONfilename)
-        .then(response => response.json())
-        .then(data => {
-            console.log("We got JSON");
-            JSONfile = data;
-            window.localStorage.setItem("jsonData", JSON.stringify(JSONfile));
-            queryAndReplace();
-        }).catch((reason) => {
-        console.log("Failed to get JSON: " + reason);
-    });
-}
-
 function queryAndReplace() {
-    let query = document.getElementById("button-input").value;
-    if(query !== lastQuery && query !== null && !(query.length===0)){
+    let query = ["", "", ""];
+    let empty = true;
+    let doQuery = false;
+    query[0] = document.getElementById("rpi_title_id-input").value;
+    query[1] = document.getElementById("school-input").value;
+    query[2] = document.getElementById("location-input").value;
+    for(let i = 0; i < 3; ++i){
+        if(query[i].length!==0){
+            empty = false;
+        }
+        if(query[i] !== null && !empty){
+            doQuery = true;
+        }
+    }
+    if(doQuery){
         removeAllChildNodes(document.getElementById("search-content"));
         modify_document(query);
-        lastQuery = query;
     }
 }
 
 function modify_document(query) {
-    let result = queryJSON(query,'rpi_id');
-    document.getElementById("search-count").innerText = "Found " + result.length + " matches for " + query + ".";
+    let result = sortBy(queryJSON(query), document.getElementById("sort").value);
+    let searchText = "";
+    for(let i = 0; i < 3; ++i){
+        if(query[i].length!==0){
+            if(searchText.length!==0){
+                searchText += ", ";
+            }
+            searchText += query[i];
+
+        }
+    }
+
+    document.getElementById("search-count").innerText = "Found " + result.length + " matches for query: " + searchText;
     for(let i = 0; i < result.length; i++) {
         let div = document.createElement("div");
-        div.innerHTML = "<p>School: " + result[i][0] + ", " + result[i][2]
-            + "<br>Transfer Class Title: " + result[i][1].other_school_title + "<br>Transfer Class ID: " + result[i][1].other_school_id
-            + "<br>RPI Class: " + result[i][1].rpi_title + "<br>RPI Class ID: " + result[i][1].rpi_id
-            + "<br>Credits at RPI: " + result[i][1].rpi_credits + "</p>";
+        div.innerHTML = "<p>School: " + result[i].school + ", " + result[i].loc
+            + "<br>Transfer Class Title: " + result[i].other_school_title + "<br>Transfer Class ID: " + result[i].other_school_id
+            + "<br>RPI Class: " + result[i].rpi_title + "<br>RPI Class ID: " + result[i].rpi_id
+            + "<br>Credits at RPI: " + result[i].rpi_credits + "</p>";
         document.getElementById("search-content").appendChild(div);
     }
 }
 
-function queryJSON(query,query_type = 'rpi_id') {
+function queryJSON(query) {
     let matches = [];
     try {
         let content = JSONfile;
-        console.log(query);
+        //console.log(query);
         for (let i = 0; i < content.schools.length; ++i) {
             for (let j = 0; j < content.schools[i].courses.length; ++j) {
                 const course = content.schools[i].courses[j];
-                const school = content.schools[i].name;
-                const state = content.schools[i].state;
+                course.school = content.schools[i].name;
+                course.loc = content.schools[i].state;
 
-                let attribute = course.rpi_id;
-                if(query_type === 'rpi_id'){
-                    attribute = course.rpi_id;
-                } else if(query_type === 'rpi_title'){
-                    attribute = course.rpi_title;
-                } else if(query_type === 'school'){
-                    attribute = school;
-                } else if(query_type === 'location'){
-                    attribute = state;
+                let courseChecked = queryCourse(course, query[0].toUpperCase(), query[1].toUpperCase(), query[2].toUpperCase());
+                if(courseChecked !== null){
+                    matches.push(course);
                 }
 
-                if (attribute.toUpperCase().includes(query.toUpperCase())) {
-                    //console.log("\n" + school + ":");
-                    //console.log(course)
-                    matches.push([school, course, state]);
-                }
             }
         }
-        console.log("Matches: " + matches.length);
+        //console.log("Matches: " + matches.length);
     } catch (err) {
         console.log('Failed to search JSON file', err);
     }
     return matches;
 }
 
+function queryCourse(course, query_rpi_title_id, query_school, query_location){
+    let rpi_id = course.rpi_id.toUpperCase();
+    let rpi_name = course.rpi_title.toUpperCase();
+    let course_school = course.school.toUpperCase();
+    let course_state = course.loc.toUpperCase();
+
+    if(((query_rpi_title_id.length===0 || rpi_id.includes(query_rpi_title_id)) || (query_rpi_title_id.length===0 || rpi_name.includes(query_rpi_title_id))) &&
+        (query_school.length===0 || course_school.includes(query_school)) && (query_location.length===0 || course_state.includes(query_location))){
+        return course;
+    }
+    return null;
+}
+
 function removeAllChildNodes(parent) {
     while (parent.firstChild) {
         parent.removeChild(parent.firstChild);
+    }
+}
+
+function sortBy(courses, by) {
+    if(by === "class_name"){
+        return courses.sort(function(a,b){
+            return a.rpi_title > b.rpi_title ? 1 : (a.rpi_title < b.rpi_title ? -1 : 0);
+        });
+    } else if(by === "class_id"){
+        return courses.sort(function(a,b){
+            return a.rpi_id > b.rpi_id ? 1 : (a.rpi_id < b.rpi_id ? -1 : 0);
+        });
+    } else if(by === "location"){
+        return courses.sort(function(a,b){
+            return a.loc > b.loc ? 1 : (a.loc < b.loc ? -1 : 0);
+        });
+    } else { // if by school (default)
+          return courses;
     }
 }
