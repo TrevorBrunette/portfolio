@@ -33,6 +33,13 @@ function checkVersion() {
         fetchJSON();
     } else {
         console.log("Version file and JSON file found.");
+        if(webVersion === localVersion) {
+            console.log("Found webVersion equal to localVersion: " + webVersion);
+        } else {
+            console.log("Found webVersion: " + webVersion + " where localVersion: " + localVersion + ". Updating...");
+            localVersion = webVersion;
+            fetchJSON();
+        }
     }
 }
 
