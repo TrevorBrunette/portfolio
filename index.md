@@ -1,4 +1,4 @@
-## trevorbrunette.github.io
+## TrevorBrunette.net
 This is the landing page. If you are seeing this, the website is very incomplete.
 
 ## Projects
